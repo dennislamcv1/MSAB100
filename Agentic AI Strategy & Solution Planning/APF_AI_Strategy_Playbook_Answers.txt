@@ -1,0 +1,89 @@
+ENTERPRISE AI STRATEGY & GOVERNANCE PLAYBOOK
+Prepared for: Executive Leadership Team, Apex Premium Finance (APF)
+Author: Principal AI Strategy Consultant and Lead Architect
+
+
+==================================================
+PROMPT 1: USE CASE PRIORITIZATION AND FEASIBILITY MATRIX
+==================================================
+
+Opportunity Audit:
+
+Daily Workspace Accelerator - Business value: moderate to high, because it reaches all 4,000 employees across 85 branches and removes time spent on meeting transcripts, email chains, and routine customer follow-up notes. Data readiness: ready, because it is out-of-the-box inside Word and Outlook and depends on no custom data estate. Risk: low. Priority 1: approve immediately.
+
+Internal Compliance Desk - Business value: high, because wealth advisors get fast, consistent answers on regional SEC rules and internal lending policies, which reduces research time and compliance errors. Data readiness: blocked, because the source data is hundreds of PDF manuals, historical memos, and policy amendments scattered across an unmanaged SharePoint site. Risk: medium, because a wrong answer creates regulatory exposure. Priority 2: approve conditionally, with no development until the data is remediated.
+
+Mortgage Underwriting Assistant - Business value: high, because it would speed up pre-approvals for the Loan Operations Team. Data readiness: moderate, because pay stubs, tax returns, and bank statements are standardized document types that can be extracted, although they carry heavy PII. Risk: critical, because the request requires autonomous write access to the core banking database with no human loan officer. Priority 3: not approvable as submitted, and approvable only in the downgraded read-only scope below.
+
+Data Remediation Specification: Internal Compliance Desk
+
+The unmanaged compliance SharePoint site mixes current policy manuals with historical memos and superseded versions, so the retrieval engine pulls conflicting chunks and blends outdated and current rules into a single answer without flagging the conflict. Policy amendments are stored as standalone files that are not merged into their base manuals, so the agent can retrieve a base rule while missing the amendment that changed it, and any scanned-image PDFs among the older manuals would be treated as blank space and silently skipped during chunking. Before development begins, the Legal and Compliance Team must archive all non-current manuals, memos, and duplicate versions to a separate archive library that is excluded from the knowledge source, and consolidate each amendment into a single current version of its parent policy. All scanned PDFs must be processed through OCR and verified as machine-readable, and the remaining documents must be moved into one governed library tagged with metadata for document type, regional jurisdiction, effective date, and status. Only after the Legal and Compliance Team certifies this cleaned library as the single source of truth will it be connected to the agent.
+
+Horizon Matrix Classification and Scope Boundary: Mortgage Underwriting Assistant
+
+The Mortgage Underwriting Assistant is classified as Horizon 3 because it requires autonomous write access to the core banking database to issue loan pre-approvals with no human loan officer in the loop. A single misread pay stub or incorrect debt-to-income calculation would become an irreversible credit decision written directly to a system of record, creating fair-lending, regulatory, and financial exposure at scale. The enforced scope boundary downgrades the project to Horizon 1 read-only: the agent may extract data from the applicant documents, calculate the debt-to-income ratio, and present a pre-approval recommendation to a human loan officer, but the loan officer must manually approve every recommendation before anything is written to the core banking database. The agent's service identity is granted no write permissions to the core banking system, and this boundary is enforced in the Phase 2 instruction architecture and RBAC configuration and carried through the pilot and production design.
+
+
+==================================================
+PROMPT 2: PLATFORM SELECTION AND IMPLEMENTATION FRAMEWORK
+==================================================
+
+Three-Layer Architecture Mapping and Buy/Extend/Build Justification:
+
+Daily Workspace Accelerator - Surface Layer, Microsoft 365 Copilot - Decision: BUY.
+The Daily Workspace Accelerator maps to the Surface Layer (Microsoft 365 Copilot), and the decision is Buy. Gate 1 passes immediately because M365 Copilot already summarizes meeting transcripts, cleans up email chains, and drafts customer follow-up notes natively inside Word and Outlook, so APF's 4,000 employees across 85 branches need no custom development. Because the tool only drafts text for the employee to review and send, it requires no write access to any banking system.
+
+Internal Compliance Desk - Orchestration Layer, Microsoft Copilot Studio - Decision: EXTEND.
+The Internal Compliance Desk maps to the Orchestration Layer (Microsoft Copilot Studio), and the decision is Extend. Gate 1 fails because out-of-the-box M365 Copilot cannot be restricted to a governed, curated corpus of APF's regional SEC rules and internal lending policies with citations that wealth advisors can trust, but Gate 2 passes because Copilot Studio connects directly to the remediated compliance SharePoint library through a native knowledge source and publishes straight into Microsoft Teams with no custom code. The extension is contingent on the Legal and Compliance Team completing the Section 1 data remediation first.
+
+Mortgage Underwriting Assistant - Engineering Layer, Azure AI Foundry Agent Service - Decision: BUILD.
+The Mortgage Underwriting Assistant maps to the Engineering Layer (Azure AI Foundry Agent Service), and the decision is Build. Gate 1 fails because no out-of-the-box tool extracts figures from pay stubs, tax returns, and bank statements and applies APF's own debt-to-income underwriting logic, and Gate 2 fails because no low-code connector in Copilot Studio can safely reach the core banking database with the deterministic calculation and strict read-only controls this workflow requires. A pro-code agent on Foundry lets the Coder run document extraction and the debt-to-income arithmetic as deterministic code, return the result as a recommendation for a human loan officer, and bind the agent to a managed identity with no write permissions to the core banking database.
+
+
+==================================================
+PROMPT 3: MULTI-PLATFORM ADOPTION ROADMAP
+==================================================
+
+Proposed APF timeline (budget from the $3.5 million transformation fund is released phase by phase, and nothing is released before the Phase 1 gate is passed):
+
+Phase 1 - Intake (Weeks 1-2):
+The CoE reviews all three requests through the intake form and classifies each one before any budget is released. The Daily Workspace Accelerator is approved as a Horizon 1 Buy for immediate licensing, the Internal Compliance Desk is approved conditional on the Legal and Compliance Team completing the Section 1 data remediation before development begins, and the Mortgage Underwriting Assistant is formally logged as Horizon 3 as submitted and approved only in the downgraded Horizon 1 read-only scope, with no exceptions permitted.
+
+Phase 2 - Baseline (Weeks 3-8):
+For the Compliance Desk, the IT and Security Architect provisions an isolated Azure Landing Zone and a dedicated managed Power Platform environment with strict RBAC, so only named administrators can deploy, access, or modify AI resources and only members of a Microsoft Entra ID security group of licensed wealth advisors can query the agent. Azure AI Content Safety is configured at the API gateway middleware layer, together with PII detection and redaction, to mask client names, account numbers, and other personal identifiers before any query reaches the language model, backed by Microsoft Purview sensitivity labels and DLP policies on the cleaned compliance library. PII protection is a priority because APF handles client financial records and wealth advisors may paste client details into their questions, and under regulations such as GLBA and SEC Regulation S-P, exposing nonpublic personal financial information to a model or its logs would create regulatory penalties and destroy client trust. The same baseline hardcodes the Mortgage Underwriting Assistant's instruction architecture and managed identity to prohibit any write operation against the core banking database, enforcing the Section 1 scope boundary before any development begins.
+
+Phase 3 - Pilot (Weeks 9-16):
+Pilot scope: Compliance Desk access is locked to an Entra ID security group of 25 wealth advisors drawn from a representative set of regional branches, and the downgraded Mortgage Underwriting Assistant is piloted with a small named group of loan officers.
+
+Telemetry triage protocols: If Application Insights logs average response latency above 3,000 ms, the Coder reduces the document chunk size to 500 tokens with 10% sentence overlap and re-indexes. If thumbs-down feedback exceeds 30% of rated responses in a week, the Consultant audits the query logs and hosts a workshop on contextual prompting for the pilot advisors. If fewer than 90% of the weekly control prompt answers match the approved baseline, the Legal and Compliance Officer halts pilot expansion and the Consultant opens a content-accuracy review of the source library. If the gateway logs even one unmasked PII entity, the IT and Security Architect suspends access to the agent until the redaction rule is corrected and retested. If the Mortgage Underwriting Assistant's audit logs record any write attempt against the core banking database, the IT and Security Architect immediately suspends the agent's access and the Coder remediates the permission or instruction gap before the pilot resumes.
+
+Phase 4 - Production (Week 17 onward):
+Azure Cost Management alerts are configured with a webhook that rate-limits prompts if token spending rises more than 20% week-over-week, and the Consultant runs the ten standard monthly control test prompts against the prior baseline to catch data drift before it reaches advisors. The Daily Workspace Accelerator licenses are rolled out to the remaining branches in waves, and the loan officer approval gate on the Mortgage Underwriting Assistant remains permanent, so any request to expand it toward autonomous action must return through CoE intake.
+
+
+==================================================
+PROMPT 4: COE OPERATING MODEL AND ACCOUNTABILITY MATRIX
+==================================================
+
+CoE Composition:
+The APF AI Center of Excellence is composed of four roles: a Business Lead (ROI accountability), an IT and Security Architect (data safety and infrastructure), a Legal and Compliance Officer (regulatory and privacy risk), and a Change Management Lead (user adoption and organizational readiness).
+
+Dual-Track Accountability Matrix:
+
+Who APPROVES it
+- Consultant: evaluates proposals through the CoE intake form and enforces Horizon Matrix scope boundaries, including the read-only boundary on the Mortgage Underwriting Assistant, before any budget is unlocked.
+- Coder: performs the technical feasibility review and IAM permissions audit, validating database boundaries and API security before any environment is provisioned.
+
+Who OWNS it
+- Consultant: owns the functional logic and content accuracy of the agents, including the accuracy of the SEC compliance PDFs and internal lending policies that ground the Compliance Desk, exercised through the Legal and Compliance Team as day-to-day content owner.
+- Coder: owns the environment workspace and infrastructure architecture, including the Azure Landing Zone, tenant isolation, RBAC, and workspace security.
+
+Who MAINTAINS it
+- Consultant: owns performance and behavior auditing, running the ten monthly control prompts and checking responses against the prior baseline to identify drift.
+- Coder: monitors Application Insights for latency spikes, manages the re-indexing pipelines, and maintains the cost alerts.
+
+Ownership Boundaries:
+The Legal and Compliance Team, on the Consultant track, owns the accuracy and currency of the SEC compliance PDFs and internal lending policies, is responsible for the Section 1 remediation of the compliance library, and must notify engineering within 48 hours of publishing any updated guideline. The Legal and Compliance Team cannot modify agent configuration, indexing, or infrastructure. The Coder track, led by the IT and Security Architect, owns the Azure Landing Zone, tenant isolation, RBAC, deployment settings, and the Mortgage Underwriting Assistant's read-only identity, and has sole authority over them. Neither role may act in the other's domain without a formal handoff through a CoE ticket.
+
+Drift Remediation Loop:
+In the month after go-live, APF's legal team publishes an updated version of a regional SEC compliance guideline to the governed SharePoint library and archives the superseded PDF, but the Compliance Desk's index still holds the stale embeddings and begins returning the outdated rule to wealth advisors. At the monthly drift audit, the Consultant runs the ten standard control test prompts, catches the answer that no longer matches the updated guideline when compared against the prior baseline, and submits a remediation ticket to engineering that cites the source document reference. The Coder executes the re-indexing pipeline by purging the stale embeddings, re-chunking the updated PDF, and uploading fresh vectors to the index. The Consultant re-runs the control prompt set, confirms that the agent now returns the current rule with the correct citation, and only then closes the ticket. The Legal and Compliance Officer logs the incident and reinforces the 48-hour notification requirement so that future guideline updates trigger re-indexing at publication rather than waiting for the monthly audit.
