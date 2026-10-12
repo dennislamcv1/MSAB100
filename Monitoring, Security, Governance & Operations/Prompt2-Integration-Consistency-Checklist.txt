@@ -1,0 +1,18 @@
+Prompt 2 - Integration Consistency Checklist
+Integrated Operations & Governance Document: Financial Services Launch Readiness
+
+Check 1 - Monitoring ↔ Security: Does your observability plan instrument the credit assessment workflow flagged as highest-risk in the security architecture?
+[X] Yes [ ] No
+Evidence (one sentence from your document): Section 1 (Observability Plan) states that the workflow layer uses Application Insights with OpenTelemetry tracing for the Automated Credit Assessment Workflow, the highest-risk component in Section 5 because it is where an extracted field becomes a credit-relevant determination, so it gets per-step latency, the confidence-score distribution and audit-write tracking.
+
+Check 2 - Testing ↔ Responsible AI & Security: Does your testing strategy include edge case coverage for the document formats identified as indirect prompt injection vectors in the security architecture?
+[X] Yes [ ] No
+Evidence (one sentence from your document): Section 2 (Testing Strategy) adds an adversarial edge-case suite that targets the injection vectors named in Section 5, the PDF, image and Office files that applicants upload with instructions hidden in white text, metadata, comments or image text, and passes only if 100% of known injection samples are quarantined before classification.
+
+Check 3 - Content Safety ↔ Security: Does your content safety framework address indirect prompt injection, the same primary threat vector identified in the security architecture?
+[X] Yes [ ] No
+Evidence (one sentence from your document): Section 4 (Content Safety Operations) treats every applicant-submitted document as an indirect prompt injection vector and enables Prompt Shields for documents (indirect attacks) on all text extracted from those documents before the classification model processes it, which is the same primary defense control Section 5 names for its highest-risk attack path.
+
+Check 4 - Executive Summary ↔ All Sections: Do the residual risks named in the executive summary match the gaps identified across Sections 1-5, not a new set introduced only in the summary?
+[X] Yes [ ] No
+Evidence (one sentence from your document): Section 6 (Executive Launch Readiness Summary) names two residual risks, boundary-band review sliding into backlog or rubber-stamping and a novel injection evading Prompt Shield, and these are the Section 3 accountability gap (tested in Section 2 and monitored in Section 1) and the Section 5 threat-model residual risk (controlled in Section 4).
