@@ -1,0 +1,15 @@
+Narrative Summary
+
+In my program capstone, a mid-sized insurance client’s support team was handling about 6,000 tier-1 tickets a month, roughly 60 percent of them repetitive billing and policy questions, and first-response time had slipped past nine hours. My task was to design an agentic system on Azure that could resolve those routine tickets on its own, including small refund adjustments, without letting a wrong answer or an unauthorized account change reach a customer.
+
+Alternative Challenge Response
+
+The obvious alternative was a single agent with every tool attached knowledge search, policy lookup and the refund API. Honestly, we prototyped exactly that in week one because it was the fastest thing to build. What ruled it out was a security constraint. The refund API wrote directly to the billing system, and the client required that only a narrowly scoped identity could call it, which you can’t enforce when one agent holds every tool. So I split it into an orchestrator with specialist agents, where only the billing agent ran under an Entra managed identity with write access. That kept the least-privilege boundary at the identity layer instead of trusting the prompt to enforce it.
+
+Failure Mode Probe Response
+
+The assumption I leaned on hardest was that the policy documents indexed in Azure AI Search were current. If a refund policy changed and the index hadn’t caught up, the agent would have given a confident, well-grounded wrong answer. My confidence threshold wouldn’t have caught it, because retrieval still scores high against an outdated document. The honest gap is that our indexer ran on a 24-hour schedule, so we had up to a day of exposure. In production I’d close it three ways reindex as soon as SharePoint reports a document change, add an effective-date filter so superseded versions can’t be retrieved, and rerun our regression evaluation set every time a policy document changes.
+
+Metric Challenge Response
+
+The 0.85 confidence threshold came from a business requirement, not a model default. The support lead told us their human tier-1 agents had about a 2 percent error rate on billing answers in QA audits, and the agent couldn’t be worse than that. We labeled 500 historical tickets and tested different thresholds, and 0.85 was the lowest point where precision held at 98 percent. The trade-off was that it limited autonomous resolution to about 38 percent of tickets, against roughly 55 percent at 0.7. That 38 percent was measured on a replay of past tickets, not live traffic, so I present it as an estimate and expect it to move once real customers phrase things differently.

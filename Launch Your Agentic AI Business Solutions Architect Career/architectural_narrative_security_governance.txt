@@ -1,0 +1,17 @@
+ARCHITECTURAL NARRATIVE 1: SECURITY AND GOVERNANCE FAILURE MODE
+
+SITUATION
+I architected a claims-inquiry agent for a regional health insurer on Azure AI Foundry Agent Service, handling about 12,000 member inquiries and 4,800 uploaded documents a month under HIPAA.
+
+TASK
+The failure mode was indirect prompt injection creating a confused deputy: instructions hidden in an uploaded PDF could make the agent call the claims API with another member's ID, and because the agent ran under its own service principal, the API returned that member's records.
+
+ACTION
+Guardrail friction: I moved enforcement out of the model and into two checkpoints. Every document passes through Prompt Shields before it enters the context window, and every tool call goes through an Azure API Management policy that validates the member's Entra ID on-behalf-of token and rejects any request whose member ID doesn't match the token's subject claim.
+
+Metric trade-off: I tuned quarantine for recall over precision, so a document is held if Prompt Shields flags it or if Document Intelligence finds hidden white-on-white text. That costs a 5% false-positive rate, about 16 adjuster-hours of review a month, which we accepted because a single cross-member disclosure means HIPAA breach notification and seven-figure regulatory exposure.
+
+Deployment reality: Every release passes an Azure DevOps gate that runs a Foundry evaluation against 400 PyRIT-generated attack documents and 1,200 de-identified benign claims. One unauthorized cross-member tool call fails the build, and injection detection recall must stay at or above 98%.
+
+RESULT
+Successful attacks dropped from 31 of 400 red-team documents, about 8%, to zero, while only 2% of inquiries, 240 quarantined documents out of 12,000, went to human review. Architecturally, the model stopped being the security boundary: it can still be fooled, but it can no longer act beyond the identity of the member it is serving, and that on-behalf-of gateway became the reference pattern for every agent on the platform.
